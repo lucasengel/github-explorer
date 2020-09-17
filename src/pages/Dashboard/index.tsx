@@ -1,77 +1,81 @@
-import React from "react";
-import { Title, Form, Repositories } from "./style";
+import React, { FormEvent, useState, ErrorInfo } from "react";
+import { ErrorBlock, Form, Repositories, Title } from "./style";
 import { FiChevronRight } from "react-icons/fi";
 
+import api from "../../services/api";
 import logoImg from "../../assets/logo.svg";
+import Repository from "../Repository";
 
-const Dashboard: React.FC = () => (
-  <>
-    <img src={logoImg} alt="Github Explorer" />
-    <Title>Explore Github Repos</Title>
-    <Form action="">
-      <input type="text" placeholder="Repo name" />
-      <button type="submit">Search</button>
-    </Form>
+interface Repository {
+  full_name: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+  };
+  description: string;
+}
 
-    <Repositories>
-      <a href="test">
-        <img
-          src="https://avatars3.githubusercontent.com/u/1020229?s=460&u=979b0f2a57523c09aee2a1eaf457b0076b1baedf&v=4"
-          alt="User Name"
+const Dashboard: React.FC = () => {
+  const [newRepo, setNewRepo] = useState("");
+  const [inputError, setInputError] = useState("");
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+
+  const handleAddRepository = async (
+    e: FormEvent<HTMLFormElement>
+  ): Promise<void> => {
+    e.preventDefault();
+    setInputError("");
+
+    if (!newRepo) {
+      setInputError("Enter a repo name: owner/repo");
+      return;
+    }
+
+    try {
+      const response = await api.get<Repository>(`/repos/${newRepo}`);
+
+      const repository = response.data;
+
+      setRepositories([...repositories, repository]);
+      setNewRepo("");
+    } catch {
+      setInputError("Error fetching repository data");
+    }
+  };
+
+  return (
+    <>
+      <img src={logoImg} alt="Github Explorer" />
+      <Title>Explore Github Repos</Title>
+      <Form hasErrors={!!inputError} onSubmit={handleAddRepository}>
+        <input
+          type="text"
+          placeholder="Repo name"
+          value={newRepo}
+          onChange={(e) => setNewRepo(e.target.value)}
         />
-        <div>
-          <strong>lucasengel/lucasengel</strong>
-          <p>
-            Most of my projects are on private repos, but I'm making an effort
-            to update this space.
-          </p>
-        </div>
-        <FiChevronRight size="20" />
-      </a>
-      <a href="test">
-        <img
-          src="https://avatars3.githubusercontent.com/u/1020229?s=460&u=979b0f2a57523c09aee2a1eaf457b0076b1baedf&v=4"
-          alt="User Name"
-        />
-        <div>
-          <strong>lucasengel/lucasengel</strong>
-          <p>
-            Most of my projects are on private repos, but I'm making an effort
-            to update this space.
-          </p>
-        </div>
-        <FiChevronRight size="20" />
-      </a>
-      <a href="test">
-        <img
-          src="https://avatars3.githubusercontent.com/u/1020229?s=460&u=979b0f2a57523c09aee2a1eaf457b0076b1baedf&v=4"
-          alt="User Name"
-        />
-        <div>
-          <strong>lucasengel/lucasengel</strong>
-          <p>
-            Most of my projects are on private repos, but I'm making an effort
-            to update this space.
-          </p>
-        </div>
-        <FiChevronRight size="20" />
-      </a>
-      <a href="test">
-        <img
-          src="https://avatars3.githubusercontent.com/u/1020229?s=460&u=979b0f2a57523c09aee2a1eaf457b0076b1baedf&v=4"
-          alt="User Name"
-        />
-        <div>
-          <strong>lucasengel/lucasengel</strong>
-          <p>
-            Most of my projects are on private repos, but I'm making an effort
-            to update this space.
-          </p>
-        </div>
-        <FiChevronRight size="20" />
-      </a>
-    </Repositories>
-  </>
-);
+        <button type="submit">Search</button>
+      </Form>
+
+      {inputError && <ErrorBlock>{inputError}</ErrorBlock>}
+
+      <Repositories>
+        {repositories.map((repository) => (
+          <a key={repository.full_name} href="test">
+            <img
+              src={repository.owner.avatar_url}
+              alt={repository.owner.login}
+            />
+            <div>
+              <strong>{repository.full_name}</strong>
+              {repository.description && <p>{repository.description}</p>}
+            </div>
+            <FiChevronRight size="20" />
+          </a>
+        ))}
+      </Repositories>
+    </>
+  );
+};
 
 export default Dashboard;
